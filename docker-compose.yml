@@ -13,10 +13,10 @@ services:
       - postgres-data:/var/lib/postgresql/data  
 
   app:
-    image: your-app-image  # Replace with application container image
+    image: water-tracker  
     container_name: app-container
     depends_on:
-      - db  
+      - db      
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/website_data  
     ports:
