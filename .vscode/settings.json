@@ -1,0 +1,14 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "Postgres Local",
+            "database": "aars_test",
+            "username": "postgres",
+            "password": "Ou812@atm2380"
+        }
+    ]
+}

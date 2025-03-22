@@ -1,0 +1,8 @@
+fastapi[all]
+uvicorn
+asyncpg
+sqlalchemy
+alembic
+psycopg2-binary
+databases
+pydantic
