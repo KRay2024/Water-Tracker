@@ -11,7 +11,6 @@ class users(Base):
     name = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, nullable=False)
 
-    # Define a relationship to the Drinking table
     drinking_records = relationship("Drinking", back_populates="user")
 
 

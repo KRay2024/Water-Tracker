@@ -4,9 +4,12 @@ from database import database, engine, metadata
 from models import users, drinking
 from pydantic import BaseModel
 from datetime import date
-
+import logging
 
 app = FastAPI()
+
+logger = logging.getLogger(__name__)
+
 
 class UserIn(BaseModel):
     name: str
@@ -40,11 +43,15 @@ async def get_users():
 
 @app.get("/users/{user_id}")
 async def get_user(user_id: int):
-    query = "SELECT * FROM users WHERE id = :user_id"
-    user = await database.fetch_one(query, values={"user_id": user_id})
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+    try:
+        query = "SELECT * FROM users WHERE id = :user_id"
+        user = await database.fetch_one(query, values={"user_id": user_id})
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user
+    except Exception as e:
+        logger.error(f"Error fetching user {user_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/users/")
 async def create_user(user: UserIn):
