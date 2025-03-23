@@ -1,29 +1,31 @@
-from sqlalchemy import Table, Column, Integer, String, ForeignKey, Date
+from sqlalchemy import Column, Integer, String, ForeignKey, Date
 from sqlalchemy.orm import relationship
-from database import metadata
-from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
 
-# Users table
-users = Table(
-    "users",
-    metadata,
-    Column("id", Integer, primary_key=True),
-    Column("name", String(100), nullable=False),
-    Column("email", String(100), unique=True, nullable=False),
-)
+Base = declarative_base()
 
-# Drinking table
-drinking = Table(
-    "drinking",
-    metadata,
-    Column("id", Integer, primary_key=True),
-    Column("user_id", Integer, ForeignKey("users.id"), nullable=False),
-    Column("oz_goal", Integer, nullable=False),
-    Column("oz_consumed", Integer, nullable=False),
-    Column("oz_remaining", Integer, nullable=False),
-    Column("date", Date, nullable=False)
-)
+class users(Base):
+    __tablename__ = 'users'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    email = Column(String(100), unique=True, nullable=False)
 
-#Defining relationships
-users = relationship("User", back_populates="drinking_records")
+    # Define a relationship to the Drinking table
+    drinking_records = relationship("Drinking", back_populates="user")
+
+
+class drinking(Base):
+    __tablename__ = 'drinking'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    oz_goal = Column(Integer, nullable=False)
+    oz_consumed = Column(Integer, nullable=False)
+    oz_remaining = Column(Integer, nullable=False)
+    date = Column(Date, nullable=False)
+
+    # Define the relationship to the User table
+    user = relationship("User", back_populates="drinking_records")
+
 
