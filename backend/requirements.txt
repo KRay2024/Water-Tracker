@@ -8,3 +8,4 @@ databases
 pydantic
 datetime
 logging
+load_dotenv
