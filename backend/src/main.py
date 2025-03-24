@@ -1,4 +1,3 @@
-# main.py
 from fastapi import FastAPI, HTTPException
 from database import database, engine, metadata
 from models import users, drinking
@@ -134,3 +133,39 @@ async def update_drinking(user_id: int, record_id: int, drinking: DrinkingIn):
     if not last_record_id:
         raise HTTPException(status_code=404, detail="Record not found")
     return {"id": last_record_id, "user_id": user_id, "oz_goal": drinking.oz_goal, "oz_consumed": drinking.oz_consumed, "oz_remaining": oz_remaining, "date": drinking.date}
+
+@app.put("/users/{user_id}")
+async def update_user(user_id: int, user: UserIn):
+    query = """UPDATE users SET name = :name, email = :email WHERE id = :user_id"""
+    values = {"user_id": user_id, "name": user.name, "email": user.email}
+
+    result = await database.execute(query=query, values=values)
+
+    if result == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {"message": "User updated successfully"}
+
+
+@app.delete("/users/{user_id}")
+async def delete_user(user_id: int):
+    query = "SELECT * FROM users WHERE id = :user_id"
+    user = await database.fetch_one(query, values={"user_id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    await database.execute("DELETE FROM drinking WHERE user_id = :user_id", values={"user_id": user_id})
+
+    await database.execute("DELETE FROM users WHERE id = :user_id", values={"user_id": user_id})
+
+    return {"message": "User deleted successfully"}
+
+@app.delete("/drinking/{record_id}")
+async def delete_drinking(record_id: int):
+    query = "DELETE FROM drinking WHERE id = :record_id"
+    result = await database.execute(query, values={"record_id": record_id})
+
+    if result == 0:
+        raise HTTPException(status_code=404, detail="Drinking record not found")
+
+    return {"message": "Drinking record deleted successfully"}
