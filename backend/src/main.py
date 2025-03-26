@@ -1,11 +1,22 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
 from database import database, engine, metadata
 from models import users, drinking
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, datetime
 import logging
+from typing import Dict, Any
 
-app = FastAPI()
+app = FastAPI(servers=[{"url": "http://localhost:8000", "description": "Local server"}])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins (adjust for production)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +34,7 @@ class DrinkingIn(BaseModel):
 
 @app.on_event("startup")
 async def startup():
+    print("WE LOVE FORTNITE")
     await database.connect()
     metadata.create_all(engine)
 
@@ -32,6 +44,7 @@ async def shutdown():
 
 @app.get("/")
 async def read_root():
+    print("HELLO")
     return {"message": "Database connection is working!"}
 
 @app.get("/users/")
@@ -47,10 +60,51 @@ async def get_user(user_id: int):
         user = await database.fetch_one(query, values={"user_id": user_id})
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
+
         return user
     except Exception as e:
         logger.error(f"Error fetching user {user_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import Optional
+
+app = FastAPI()
+
+
+class UserIn(BaseModel):
+    name: str
+    email: str
+
+
+from fastapi import FastAPI, HTTPException, Query
+
+app = FastAPI()
+
+
+@app.post("/register/")
+async def register_user(name: str, email: str):
+    try:
+        # 1. Check if user exists
+        existing_user = await database.fetch_one(
+            "SELECT * FROM users WHERE name = :name AND email = :email",
+            {"name": name, "email": email}
+        )
+        if existing_user:
+            raise HTTPException(status_code=400, detail="User already exists")
+
+        # 2. Create new user
+        user_id = await database.execute(
+            "INSERT INTO users (name, email) VALUES (:name, :email) RETURNING id",
+            {"name": name, "email": email}
+        )
+
+        return {"id": user_id, "name": name, "email": email}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/users/")
 async def create_user(user: UserIn):
@@ -90,13 +144,32 @@ async def create_drinking(drinking: DrinkingIn):
         "date": drinking.date
     }
 
+
 @app.get("/drinking/{user_id}")
 async def get_drink(user_id: int):
     query = "SELECT * FROM drinking WHERE user_id = :user_id"
-    user = await database.fetch_one(query, values={"user_id": user_id})
-    if user is None:
+    results = await database.fetch_all(query, values={"user_id": user_id})
+    print("degub")
+
+    if not results:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
+    print("degub")
+        # Convert each record and serialize dates
+    formatted_records = []
+    print("degub")
+    for result in results:
+        print("degub")
+        print(result)
+        record_dict = dict(result)  # Convert to dictionary
+        print("dicted")
+        # Handle date serialization
+        record_dict["date"] = str(record_dict["date"])
+        print("WE ARE YOUNG")
+        formatted_records.append(record_dict)
+    print(formatted_records)
+    print("degub")
+    return formatted_records
+
 
 @app.get("/drinking/")
 async def get_drinks():

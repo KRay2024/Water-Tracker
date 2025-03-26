@@ -9,3 +9,4 @@ pydantic
 datetime
 logging
 load_dotenv
+typing
