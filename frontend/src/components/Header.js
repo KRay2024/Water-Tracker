@@ -1,37 +1,40 @@
 import { Link, useNavigate } from 'react-router-dom';
 import '../App.css'; // Optional for styling
+import logo from '../logo.png'; // Adjust path as needed
 
 function Header({ isLoggedIn, onLogout }) {
   const navigate = useNavigate();
+  const logged = localStorage.getItem('loggedIn');
+
+  const handleLogout = () => {
+    localStorage.setItem('loggedIn', 'false');
+    localStorage.setItem('userid', -1);
+    navigate('/'); // Redirect to home after logout
+  };
 
   return (
     <header className="app-header">
-      {/* Logo with home link */}
+
       <div className="logo-container" onClick={() => navigate('/')}>
-        <img src="/logo.png" alt="Water Tracker Logo" className="logo" />
+      <img src={logo} alt="Water Tracker Logo" className="logo" />
         <h1>Water Tracker</h1>
       </div>
-
-      {/* Navigation Links */}
       <nav className="main-nav">
         <ul>
           <li><Link to="/">Home</Link></li>
           <li><Link to="/about">About</Link></li>
-          <li><Link to="/dashboard">Dashboard</Link></li>
+          {logged === 'true' ? (
+            <li><Link to="/water">Water Page</Link></li>
+          ) : null}
         </ul>
       </nav>
 
-      {/* Auth Section */}
+      
       <div className="auth-section">
-        {isLoggedIn ? (
-          <>
-            <Link to="/profile" className="profile-link">
-              <span>👤</span>
-            </Link>
-            <button onClick={onLogout} className="logout-btn">
-              Logout
-            </button>
-          </>
+        {logged === 'true' ? (
+          <button onClick={handleLogout} className="logout-btn">
+            Logout
+          </button>
         ) : (
           <>
             <button 

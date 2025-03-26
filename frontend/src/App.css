@@ -95,14 +95,23 @@
 }
 
 .logo {
-  height: 40px;
+  height: 60px;
   width: auto;
+}
+
+.main-nav {
+  /* Ensure nav container doesn't center its content */
+  display: flex;
+  justify-content: flex-start; /* Align children to left */
 }
 
 .main-nav ul {
   display: flex;
-  gap: 2rem;
+  margin: 0; /* Reset margin */
+  padding: 0; /* Reset padding */
   list-style: none;
+  gap: 30px;
+  justify-content: flex-start; /* Explicitly align to left */
 }
 
 .main-nav a {

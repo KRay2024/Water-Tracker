@@ -67,80 +67,61 @@ async def get_user(user_id: int):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import Optional
+@app.post("/login/")
+async def get_user(user: UserIn):
+    print("GET_USER")
+    existing_user = await database.fetch_one(
+        "SELECT * FROM users WHERE email = :email AND name = :name",
+        {"email": user.email, "name": user.name},
+    )
 
-app = FastAPI()
+    if not existing_user:
+        raise HTTPException(status_code=400, detail="USER NOT FOUND")
 
-
-class UserIn(BaseModel):
-    name: str
-    email: str
-
-
-from fastapi import FastAPI, HTTPException, Query
-
-app = FastAPI()
-
-
-@app.post("/register/")
-async def register_user(name: str, email: str):
-    try:
-        # 1. Check if user exists
-        existing_user = await database.fetch_one(
-            "SELECT * FROM users WHERE name = :name AND email = :email",
-            {"name": name, "email": email}
-        )
-        if existing_user:
-            raise HTTPException(status_code=400, detail="User already exists")
-
-        # 2. Create new user
-        user_id = await database.execute(
-            "INSERT INTO users (name, email) VALUES (:name, :email) RETURNING id",
-            {"name": name, "email": email}
-        )
-
-        return {"id": user_id, "name": name, "email": email}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    use = dict(existing_user)
+    return use["userid"]
 
 @app.post("/users/")
 async def create_user(user: UserIn):
-    query = "INSERT INTO users (name, email) VALUES (:name, :email) RETURNING id"
+    existing_user = await database.fetch_one(
+        "SELECT * FROM users WHERE email = :email",
+        {"email": user.email}
+    )
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already exists")
+
+    query = "INSERT INTO users (name, email) VALUES (:name, :email) RETURNING userid"
     values = {"name": user.name, "email": user.email}
     last_record_id = await database.execute(query, values)
-    return {"id": last_record_id, "name": user.name, "email": user.email}
+    return {"userid": last_record_id, "name": user.name, "email": user.email}
 
 @app.post("/drinking/")
 async def create_drinking(drinking: DrinkingIn):
     if not drinking.date:
         drinking.date = date.today()
 
-    oz_remaining = drinking.oz_goal - drinking.oz_consumed
 
     query = """
     INSERT INTO drinking (user_id, oz_goal, oz_consumed, oz_remaining, date)
-    VALUES (:user_id, :oz_goal, :oz_consumed, :oz_remaining, :date)
+    VALUES (:user_id, :oz_goal, :oz_consumed, :oz_remaining, :date) RETURNING record_id
     """
 
     values = {
         "user_id": drinking.user_id,
         "oz_goal": drinking.oz_goal,
         "oz_consumed": drinking.oz_consumed,
-        "oz_remaining": oz_remaining,
+        "oz_remaining": drinking.oz_remaining,
         "date": drinking.date
     }
 
     last_record_id = await database.execute(query, values)
     
     return {
-        "id": last_record_id,
+        "record_id": last_record_id,
         "user_id": drinking.user_id,
         "oz_goal": drinking.oz_goal,
         "oz_consumed": drinking.oz_consumed,
-        "oz_remaining": oz_remaining,
+        "oz_remaining": drinking.oz_remaining,
         "date": drinking.date
     }
 
@@ -149,11 +130,10 @@ async def create_drinking(drinking: DrinkingIn):
 async def get_drink(user_id: int):
     query = "SELECT * FROM drinking WHERE user_id = :user_id"
     results = await database.fetch_all(query, values={"user_id": user_id})
+    print("degub : USERID ---> " + str(user_id))
     print("degub")
 
-    if not results:
-        raise HTTPException(status_code=404, detail="User not found")
-    print("degub")
+    print("HI")
         # Convert each record and serialize dates
     formatted_records = []
     print("degub")
@@ -191,8 +171,8 @@ async def update_drinking(user_id: int, record_id: int, drinking: DrinkingIn):
     query = """
     UPDATE drinking
     SET oz_goal = :oz_goal, oz_consumed = :oz_consumed, oz_remaining = :oz_remaining, date = :date
-    WHERE id = :record_id AND user_id = :user_id
-    RETURNING id
+    WHERE record_id = :record_id AND user_id = :user_id
+    RETURNING record_id
     """
     values = {
         "user_id": user_id,
@@ -205,7 +185,7 @@ async def update_drinking(user_id: int, record_id: int, drinking: DrinkingIn):
     last_record_id = await database.execute(query, values)
     if not last_record_id:
         raise HTTPException(status_code=404, detail="Record not found")
-    return {"id": last_record_id, "user_id": user_id, "oz_goal": drinking.oz_goal, "oz_consumed": drinking.oz_consumed, "oz_remaining": oz_remaining, "date": drinking.date}
+    return {"record_id": last_record_id, "user_id": user_id, "oz_goal": drinking.oz_goal, "oz_consumed": drinking.oz_consumed, "oz_remaining": oz_remaining, "date": drinking.date}
 
 @app.put("/users/{user_id}")
 async def update_user(user_id: int, user: UserIn):
@@ -235,7 +215,7 @@ async def delete_user(user_id: int):
 
 @app.delete("/drinking/{record_id}")
 async def delete_drinking(record_id: int):
-    query = "DELETE FROM drinking WHERE id = :record_id"
+    query = "DELETE FROM drinking WHERE record_id = :record_id"
     result = await database.execute(query, values={"record_id": record_id})
 
     if result == 0:
