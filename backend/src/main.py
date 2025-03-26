@@ -1,11 +1,22 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
 from database import database, engine, metadata
 from models import users, drinking
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, datetime
 import logging
+from typing import Dict, Any
 
-app = FastAPI()
+app = FastAPI(servers=[{"url": "http://localhost:8000", "description": "Local server"}])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins (adjust for production)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +34,7 @@ class DrinkingIn(BaseModel):
 
 @app.on_event("startup")
 async def startup():
+    print("WE LOVE FORTNITE")
     await database.connect()
     metadata.create_all(engine)
 
@@ -32,6 +44,7 @@ async def shutdown():
 
 @app.get("/")
 async def read_root():
+    print("HELLO")
     return {"message": "Database connection is working!"}
 
 @app.get("/users/")
@@ -47,56 +60,96 @@ async def get_user(user_id: int):
         user = await database.fetch_one(query, values={"user_id": user_id})
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
+
         return user
     except Exception as e:
         logger.error(f"Error fetching user {user_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+
+@app.post("/login/")
+async def get_user(user: UserIn):
+    print("GET_USER")
+    existing_user = await database.fetch_one(
+        "SELECT * FROM users WHERE email = :email AND name = :name",
+        {"email": user.email, "name": user.name},
+    )
+
+    if not existing_user:
+        raise HTTPException(status_code=400, detail="USER NOT FOUND")
+
+    use = dict(existing_user)
+    return use["userid"]
+
 @app.post("/users/")
 async def create_user(user: UserIn):
-    query = "INSERT INTO users (name, email) VALUES (:name, :email) RETURNING id"
+    existing_user = await database.fetch_one(
+        "SELECT * FROM users WHERE email = :email",
+        {"email": user.email}
+    )
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already exists")
+
+    query = "INSERT INTO users (name, email) VALUES (:name, :email) RETURNING userid"
     values = {"name": user.name, "email": user.email}
     last_record_id = await database.execute(query, values)
-    return {"id": last_record_id, "name": user.name, "email": user.email}
+    return {"userid": last_record_id, "name": user.name, "email": user.email}
 
 @app.post("/drinking/")
 async def create_drinking(drinking: DrinkingIn):
     if not drinking.date:
         drinking.date = date.today()
 
-    oz_remaining = drinking.oz_goal - drinking.oz_consumed
 
     query = """
     INSERT INTO drinking (user_id, oz_goal, oz_consumed, oz_remaining, date)
-    VALUES (:user_id, :oz_goal, :oz_consumed, :oz_remaining, :date)
+    VALUES (:user_id, :oz_goal, :oz_consumed, :oz_remaining, :date) RETURNING record_id
     """
 
     values = {
         "user_id": drinking.user_id,
         "oz_goal": drinking.oz_goal,
         "oz_consumed": drinking.oz_consumed,
-        "oz_remaining": oz_remaining,
+        "oz_remaining": drinking.oz_remaining,
         "date": drinking.date
     }
 
     last_record_id = await database.execute(query, values)
     
     return {
-        "id": last_record_id,
+        "record_id": last_record_id,
         "user_id": drinking.user_id,
         "oz_goal": drinking.oz_goal,
         "oz_consumed": drinking.oz_consumed,
-        "oz_remaining": oz_remaining,
+        "oz_remaining": drinking.oz_remaining,
         "date": drinking.date
     }
+
 
 @app.get("/drinking/{user_id}")
 async def get_drink(user_id: int):
     query = "SELECT * FROM drinking WHERE user_id = :user_id"
-    user = await database.fetch_one(query, values={"user_id": user_id})
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+    results = await database.fetch_all(query, values={"user_id": user_id})
+    print("degub : USERID ---> " + str(user_id))
+    print("degub")
+
+    print("HI")
+        # Convert each record and serialize dates
+    formatted_records = []
+    print("degub")
+    for result in results:
+        print("degub")
+        print(result)
+        record_dict = dict(result)  # Convert to dictionary
+        print("dicted")
+        # Handle date serialization
+        record_dict["date"] = str(record_dict["date"])
+        print("WE ARE YOUNG")
+        formatted_records.append(record_dict)
+    print(formatted_records)
+    print("degub")
+    return formatted_records
+
 
 @app.get("/drinking/")
 async def get_drinks():
@@ -118,8 +171,8 @@ async def update_drinking(user_id: int, record_id: int, drinking: DrinkingIn):
     query = """
     UPDATE drinking
     SET oz_goal = :oz_goal, oz_consumed = :oz_consumed, oz_remaining = :oz_remaining, date = :date
-    WHERE id = :record_id AND user_id = :user_id
-    RETURNING id
+    WHERE record_id = :record_id AND user_id = :user_id
+    RETURNING record_id
     """
     values = {
         "user_id": user_id,
@@ -132,7 +185,7 @@ async def update_drinking(user_id: int, record_id: int, drinking: DrinkingIn):
     last_record_id = await database.execute(query, values)
     if not last_record_id:
         raise HTTPException(status_code=404, detail="Record not found")
-    return {"id": last_record_id, "user_id": user_id, "oz_goal": drinking.oz_goal, "oz_consumed": drinking.oz_consumed, "oz_remaining": oz_remaining, "date": drinking.date}
+    return {"record_id": last_record_id, "user_id": user_id, "oz_goal": drinking.oz_goal, "oz_consumed": drinking.oz_consumed, "oz_remaining": oz_remaining, "date": drinking.date}
 
 @app.put("/users/{user_id}")
 async def update_user(user_id: int, user: UserIn):
@@ -162,7 +215,7 @@ async def delete_user(user_id: int):
 
 @app.delete("/drinking/{record_id}")
 async def delete_drinking(record_id: int):
-    query = "DELETE FROM drinking WHERE id = :record_id"
+    query = "DELETE FROM drinking WHERE record_id = :record_id"
     result = await database.execute(query, values={"record_id": record_id})
 
     if result == 0:
