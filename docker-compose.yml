@@ -26,6 +26,17 @@ services:
     networks:
       - app-network
 
+  frontend:
+    build: ./frontend
+    container_name: frontend-container
+    ports:
+    - "8501:8501"
+    depends_on:
+    - app
+    networks:
+    - app-network
+
+
 volumes:
   postgres-data:
 
