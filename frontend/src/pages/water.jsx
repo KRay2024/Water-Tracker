@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header'
 
@@ -18,15 +19,7 @@ export default function Water() {
     date: ''
   });
 
-  useEffect(() => {
-    if (!userid || userid == -1) {
-      navigate('/');
-      return;
-    }
-    fetchDrinks();
-  }, [userid, navigate]);
-
-  const fetchDrinks = async () => {
+  const fetchDrinks = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`http://localhost:8000/drinking/${userid}`);
@@ -39,7 +32,15 @@ export default function Water() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userid]);
+
+  useEffect(() => {
+    if (!userid || userid === -1) {
+      navigate('/');
+      return;
+    }
+    fetchDrinks();
+  }, [userid, navigate, fetchDrinks]);
 
   const handleAddDrink = async (e) => {
     e.preventDefault();

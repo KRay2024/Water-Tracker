@@ -11,7 +11,7 @@ class users(Base):
     name = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, nullable=False)
 
-    drinking_records = relationship("Drinking", back_populates="user")
+    drinking_records = relationship("Drinking", back_populates="user", cascade="all, delete-orphan")
 
 
 class drinking(Base):

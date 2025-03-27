@@ -55,21 +55,18 @@ async def get_users():
 
 @app.get("/users/{user_id}")
 async def get_user(user_id: int):
-    try:
-        query = "SELECT * FROM users WHERE id = :user_id"
-        user = await database.fetch_one(query, values={"user_id": user_id})
-        if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
+    query = "SELECT * FROM users WHERE id = :user_id"
+    user = await database.fetch_one(query, values={"user_id": user_id})
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
 
-        return user
-    except Exception as e:
-        logger.error(f"Error fetching user {user_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+    return user
 
 
 @app.post("/login/")
 async def get_user(user: UserIn):
     print("GET_USER")
+    
     existing_user = await database.fetch_one(
         "SELECT * FROM users WHERE email = :email AND name = :name",
         {"email": user.email, "name": user.name},
@@ -79,7 +76,13 @@ async def get_user(user: UserIn):
         raise HTTPException(status_code=400, detail="USER NOT FOUND")
 
     use = dict(existing_user)
-    return use["userid"]
+    user_id = use.get("id")
+    
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User ID not found")
+
+    return {"userid": user_id}
+
 
 @app.post("/users/")
 async def create_user(user: UserIn):
@@ -90,10 +93,11 @@ async def create_user(user: UserIn):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already exists")
 
-    query = "INSERT INTO users (name, email) VALUES (:name, :email) RETURNING userid"
+    query = "INSERT INTO users (name, email) VALUES (:name, :email) RETURNING id"
     values = {"name": user.name, "email": user.email}
     last_record_id = await database.execute(query, values)
     return {"userid": last_record_id, "name": user.name, "email": user.email}
+
 
 @app.post("/drinking/")
 async def create_drinking(drinking: DrinkingIn):
