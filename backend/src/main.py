@@ -81,7 +81,7 @@ async def get_user(user: UserIn):
     if not user_id:
         raise HTTPException(status_code=400, detail="User ID not found")
 
-    return {"userid": user_id}
+    return user_id
 
 
 @app.post("/users/")
@@ -134,24 +134,21 @@ async def create_drinking(drinking: DrinkingIn):
 async def get_drink(user_id: int):
     query = "SELECT * FROM drinking WHERE user_id = :user_id"
     results = await database.fetch_all(query, values={"user_id": user_id})
-    print("degub : USERID ---> " + str(user_id))
-    print("degub")
-
-    print("HI")
+  
         # Convert each record and serialize dates
     formatted_records = []
-    print("degub")
+   
     for result in results:
-        print("degub")
+     
         print(result)
         record_dict = dict(result)  # Convert to dictionary
         print("dicted")
         # Handle date serialization
         record_dict["date"] = str(record_dict["date"])
-        print("WE ARE YOUNG")
+       
         formatted_records.append(record_dict)
     print(formatted_records)
-    print("degub")
+ 
     return formatted_records
 
 
