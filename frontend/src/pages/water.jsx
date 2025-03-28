@@ -35,7 +35,8 @@ export default function Water() {
   }, [userid]);
 
   useEffect(() => {
-    if (!userid || userid === -1) {
+
+    if (!userid || userid == -1) {
       navigate('/');
       return;
     }    
@@ -70,7 +71,7 @@ export default function Water() {
   };
 
   const handleEditDrink = (drink) => {
-    setEditingId(drink.record_id);
+    setEditingId(drink.id);
     setNewDrink({
       oz_goal: drink.oz_goal,
       oz_consumed: drink.oz_consumed,
@@ -104,7 +105,7 @@ export default function Water() {
 
       const updatedData = await response.json();
       setDrinks(drinks.map(drink => 
-        drink.record_id === editingId ? updatedData : drink
+        drink.id === editingId ? updatedData : drink
       ));
       setEditingId(null);
       setNewDrink({ oz_goal: '', oz_consumed: '', date: '' });
@@ -133,7 +134,7 @@ export default function Water() {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      setDrinks(drinks.filter(drink => drink.record_id !== recordId));
+      setDrinks(drinks.filter(drink => drink.id !== recordId));
     } catch (err) {
       console.error("Delete failed:", err);
       setError(err.message);
@@ -211,12 +212,12 @@ export default function Water() {
           {drinks.length > 0 ? (
             drinks.map(drink => (
               <div 
-                key={drink.record_id} 
-                style={editingId === drink.record_id ? styles.editCard : styles.drinkCard}
+                key={drink.id} 
+                style={editingId === drink.id ? styles.editCard : styles.drinkCard}
               >
-                {editingId === drink.record_id ? (
+                {editingId === drink.id ? (
                   <form onSubmit={handleUpdateDrink} style={styles.form}>
-                    <h3 style={styles.cardTitle}>Edit Record #{drink.record_id}</h3>
+                    <h3 style={styles.cardTitle}>Edit Record #{drink.id}</h3>
                     <div style={styles.formGroup}>
                       <label style={styles.label}>Daily Goal (oz)</label>
                       <input
@@ -265,7 +266,7 @@ export default function Water() {
                 ) : (
                   <>
                     <div style={styles.cardHeader}>
-                      <h3 style={styles.cardTitle}>Record #{drink.record_id}</h3>
+                      <h3 style={styles.cardTitle}>Record #{drink.id}</h3>
                       <div style={styles.cardDate}>{drink.date}</div>
                     </div>
                     <div style={styles.progressContainer}>
@@ -309,7 +310,7 @@ export default function Water() {
                         Edit
                       </button>
                       <button 
-                        onClick={() => handleDeleteDrink(drink.record_id)}
+                        onClick={() => handleDeleteDrink(drink.id)}
                         style={styles.deleteButton}
                       >
                         Delete

@@ -76,7 +76,7 @@ async def get_user(user: UserIn):
         raise HTTPException(status_code=400, detail="USER NOT FOUND")
 
     use = dict(existing_user)
-    user_id = use.get("id")
+    user_id = use.get("userid")
     
     if not user_id:
         raise HTTPException(status_code=400, detail="User ID not found")
@@ -93,7 +93,7 @@ async def create_user(user: UserIn):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already exists")
 
-    query = "INSERT INTO users (name, email) VALUES (:name, :email) RETURNING id"
+    query = "INSERT INTO users (name, email) VALUES (:name, :email) RETURNING userid"
     values = {"name": user.name, "email": user.email}
     last_record_id = await database.execute(query, values)
 
@@ -120,7 +120,7 @@ async def create_drinking(drinking: DrinkingIn):
 
     query = """
     INSERT INTO drinking (user_id, oz_goal, oz_consumed, oz_remaining, date)
-    VALUES (:user_id, :oz_goal, :oz_consumed, :oz_remaining, :date) RETURNING record_id
+    VALUES (:user_id, :oz_goal, :oz_consumed, :oz_remaining, :date) RETURNING id
     """
 
     values = {
@@ -134,7 +134,7 @@ async def create_drinking(drinking: DrinkingIn):
     last_record_id = await database.execute(query, values)
     
     return {
-        "record_id": last_record_id,
+        "id": last_record_id,
         "user_id": drinking.user_id,
         "oz_goal": drinking.oz_goal,
         "oz_consumed": drinking.oz_consumed,
@@ -179,14 +179,14 @@ async def get_drink_by_date(user_id: int, date: date):
         raise HTTPException(status_code=404, detail="Record not found")
     return drink
 
-@app.put("/drinking/{user_id}/{record_id}")
-async def update_drinking(user_id: int, record_id: int, drinking: DrinkingIn):
+@app.put("/drinking/{user_id}/{id}")
+async def update_drinking(user_id: int, id: int, drinking: DrinkingIn):
     oz_remaining = drinking.oz_goal - drinking.oz_consumed
     query = """
     UPDATE drinking
     SET oz_goal = :oz_goal, oz_consumed = :oz_consumed, oz_remaining = :oz_remaining, date = :date
-    WHERE record_id = :record_id AND user_id = :user_id
-    RETURNING record_id
+    WHERE id = :id AND user_id = :user_id
+    RETURNING id
     """
     values = {
         "user_id": user_id,
@@ -194,12 +194,12 @@ async def update_drinking(user_id: int, record_id: int, drinking: DrinkingIn):
         "oz_consumed": drinking.oz_consumed,
         "oz_remaining": oz_remaining,
         "date": drinking.date,
-        "record_id": record_id
+        "id": id
     }
     last_record_id = await database.execute(query, values)
     if not last_record_id:
         raise HTTPException(status_code=404, detail="Record not found")
-    return {"record_id": last_record_id, "user_id": user_id, "oz_goal": drinking.oz_goal, "oz_consumed": drinking.oz_consumed, "oz_remaining": oz_remaining, "date": drinking.date}
+    return {"id": last_record_id, "user_id": user_id, "oz_goal": drinking.oz_goal, "oz_consumed": drinking.oz_consumed, "oz_remaining": oz_remaining, "date": drinking.date}
 
 @app.put("/users/{user_id}")
 async def update_user(user_id: int, user: UserIn):
@@ -227,12 +227,13 @@ async def delete_user(user_id: int):
 
     return {"message": "User deleted successfully"}
 
-@app.delete("/drinking/{record_id}")
-async def delete_drinking(record_id: int):
-    query = "DELETE FROM drinking WHERE record_id = :record_id"
-    result = await database.execute(query, values={"record_id": record_id})
-
+@app.delete("/drinking/{id}")
+async def delete_drinking(id: int):
+    print("DEGUB")
+    query = "DELETE FROM drinking WHERE id = :id"
+    result = await database.execute(query, values={"id": id})
+    print("DEGUB")
     if result == 0:
         raise HTTPException(status_code=404, detail="Drinking record not found")
-
+    print("DEGUB")
     return {"message": "Drinking record deleted successfully"}
