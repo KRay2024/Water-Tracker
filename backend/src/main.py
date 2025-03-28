@@ -76,7 +76,7 @@ async def get_user(user: UserIn):
         raise HTTPException(status_code=400, detail="USER NOT FOUND")
 
     use = dict(existing_user)
-    user_id = use.get("userid")
+    user_id = use.get("id")
     
     if not user_id:
         raise HTTPException(status_code=400, detail="User ID not found")
@@ -93,7 +93,7 @@ async def create_user(user: UserIn):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already exists")
 
-    query = "INSERT INTO users (name, email) VALUES (:name, :email) RETURNING userid"
+    query = "INSERT INTO users (name, email) VALUES (:name, :email) RETURNING id"
     values = {"name": user.name, "email": user.email}
     last_record_id = await database.execute(query, values)
 
@@ -110,7 +110,7 @@ async def create_user(user: UserIn):
     }
     await database.execute(drinking_query, drinking_values)
 
-    return {"userid": last_record_id, "name": user.name, "email": user.email}
+    return {"id": last_record_id, "name": user.name, "email": user.email}
 
 @app.post("/drinking/")
 async def create_drinking(drinking: DrinkingIn):
