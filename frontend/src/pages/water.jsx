@@ -36,7 +36,7 @@ export default function Water() {
 
   useEffect(() => {
 
-    if (!userid || userid == -1) {
+    if (!userid || userid === -1) {
       navigate('/');
       return;
     }    
