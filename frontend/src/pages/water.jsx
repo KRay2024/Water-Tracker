@@ -38,9 +38,10 @@ export default function Water() {
     if (!userid || userid === -1) {
       navigate('/');
       return;
-    }
+    }    
     fetchDrinks();
   }, [userid, navigate, fetchDrinks]);
+
 
   const handleAddDrink = async (e) => {
     e.preventDefault();

@@ -81,7 +81,7 @@ async def get_user(user: UserIn):
     if not user_id:
         raise HTTPException(status_code=400, detail="User ID not found")
 
-    return {"userid": user_id}
+    return user_id
 
 
 @app.post("/users/")
@@ -96,8 +96,21 @@ async def create_user(user: UserIn):
     query = "INSERT INTO users (name, email) VALUES (:name, :email) RETURNING id"
     values = {"name": user.name, "email": user.email}
     last_record_id = await database.execute(query, values)
-    return {"userid": last_record_id, "name": user.name, "email": user.email}
 
+    drinking_query = """
+    INSERT INTO drinking (user_id, oz_goal, oz_consumed, oz_remaining, date)
+    VALUES (:user_id, :oz_goal, :oz_consumed, :oz_remaining, :date)
+    """
+    drinking_values = {
+        "user_id": last_record_id,
+        "oz_goal": 64,  
+        "oz_consumed": 0,
+        "oz_remaining": 64, 
+        "date": date.today()
+    }
+    await database.execute(drinking_query, drinking_values)
+
+    return {"userid": last_record_id, "name": user.name, "email": user.email}
 
 @app.post("/drinking/")
 async def create_drinking(drinking: DrinkingIn):
