@@ -8,7 +8,7 @@ The application allows users to edit and view their progress. The project was bu
 #### User management
 Users can log water intake records with date, amount consumed, and hydration goals.
 #### Dashboard
-Shows hydration progress the set amount, the amount drank, and the amount left.
+Shows hydration progress; the set amount, the amount drank, and the amount left.
 #### ADD and Edit Records
 Users can add new hydration records and edit existing ones.
 #### Visual
@@ -35,7 +35,7 @@ docker-compose build
 docker-compose up -d
 ```
 
-The fronend now should be accesibale at: http://localhost:8501/
+The frontend now should be accesibale at: http://localhost:8501/
 
 ### Stop containers and services
 ```bash
