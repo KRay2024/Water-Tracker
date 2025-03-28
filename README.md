@@ -1,7 +1,7 @@
 # Water-Tracker
 
 ## Overview
-The water tracker is a web application that helps users log their daily water intake, set goals, and track their drinking progress over time.
+The Water Tracker is a web application that helps users log their daily water intake, set goals, and track their drinking progress over time.
 The application allows users to edit and view their progress. The project was built using React, FastAPI, PostgreSQL, and Docker.
 
 ## Features
